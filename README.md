@@ -1,6 +1,6 @@
 # bnbot-mcp-server
 
-MCP Server for [BNBOT Chrome Extension](https://chromewebstore.google.com/detail/bnbot) - Control Twitter/X via AI assistants like OpenClaw or Claude Desktop.
+MCP Server for [BNBOT Chrome Extension](https://chromewebstore.google.com/detail/bnbot-your-ai-growth-agen/haammgigdkckogcgnbkigfleejpaiiln) - Control Twitter/X via AI assistants like OpenClaw or Claude Desktop.
 
 ## Architecture
 
