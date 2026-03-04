@@ -25,7 +25,8 @@ export function registerNavigationTools(server: any, wsServer: BnbotWsServer) {
       await new Promise(r => setTimeout(r, 2000));
       const urlCheck = await wsServer.sendAction('get_current_url', {});
       if (urlCheck.success) {
-        const currentUrl = urlCheck.data?.url || '';
+        const urlData = urlCheck.data as Record<string, unknown> | undefined;
+        const currentUrl = (urlData?.url as string) || '';
         const statusMatch = params.tweetUrl.match(/status\/(\d+)/);
         if (statusMatch && !currentUrl.includes(statusMatch[1])) {
           return {
@@ -38,10 +39,11 @@ export function registerNavigationTools(server: any, wsServer: BnbotWsServer) {
         }
       }
 
+      const verifiedUrl = (urlCheck.data as Record<string, unknown> | undefined)?.url;
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({
-          ...result,
-          data: { ...result.data, verifiedUrl: urlCheck.data?.url },
+          success: true,
+          data: { ...(result.data as object || {}), verifiedUrl },
         }, null, 2) }],
         isError: false,
       };

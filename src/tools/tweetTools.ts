@@ -63,7 +63,8 @@ export function registerTweetTools(server: any, wsServer: BnbotWsServer) {
         // 验证导航后的地址是否包含目标推文 ID
         const urlCheck = await wsServer.sendAction('get_current_url', {});
         if (urlCheck.success) {
-          const currentUrl = urlCheck.data?.url || '';
+          const urlData = urlCheck.data as Record<string, unknown> | undefined;
+          const currentUrl = (urlData?.url as string) || '';
           // 从 tweetUrl 提取 status ID
           const statusMatch = params.tweetUrl.match(/status\/(\d+)/);
           if (statusMatch && !currentUrl.includes(statusMatch[1])) {
