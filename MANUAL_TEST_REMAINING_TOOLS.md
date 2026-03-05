@@ -1,6 +1,6 @@
 # BNBOT MCP 剩余工具手工测试清单
 
-更新时间：2026-03-05
+更新时间：2026-03-05（已同步到当前实测进度）
 
 ## 0. 前置环境
 
@@ -13,22 +13,27 @@
 
 | # | 工具 | 参数（最小用例） | 通过标准 | 结果 | 备注 |
 |---|---|---|---|---|---|
-| 1 | `navigate_to_bookmarks` | `{}` | 成功跳转到 `/i/bookmarks` | ⬜ | |
-| 2 | `scrape_bookmarks` | `{ "limit": 5 }` | 返回 `success=true` 且 `count>0` | ⬜ | |
-| 3 | `navigate_to_notifications` | `{}` | 成功跳转到 `/notifications` | ⬜ | |
-| 4 | `quote_tweet` | `{ "text": "MCP quote test", "draftOnly": true }` | 打开引用推文框并填入文本，不发送 | ⬜ | 先用 `navigate_to_tweet` 到目标推文 |
-| 5 | `scrape_thread` | `{ "maxScrolls": 5 }` | 返回同作者 thread，`count>=1` | ⬜ | 先用 `navigate_to_tweet` 到 thread 首条 |
-| 6 | `account_analytics` | `{ "startDate": "2026-03-01", "endDate": "2026-03-05" }` | 返回 `followers/timeSeries` 或明确错误 | ⬜ | 当前实现疑似参数名不一致 |
-| 7 | `create_article` | `{ "title": "MCP Test Article", "content": "Hello from MCP", "publish": false }` | 进入文章编辑页并保存草稿 | ⬜ | |
-| 8 | `fetch_wechat_article` | `{ "url": "<微信文章URL>" }` | 返回标题/正文等结构化数据 | ⬜ | |
-| 9 | `fetch_tiktok_video` | `{ "url": "<TikTok URL>" }` | 返回视频元数据，若可下载则含本地文件信息 | ⬜ | |
-| 10 | `fetch_youtube_video` | `{ "url": "<YouTube URL>" }` | 返回 `title/author/videoId` | ⬜ | |
-| 11 | `post_thread` | `{ "tweets": [{ "text": "Thread test 1" }, { "text": "Thread test 2" }], "draftOnly": true }` | 至少能稳定填充 thread 草稿 | ⬜ | 已知高风险项 |
-| 12 | `download_youtube_video` | `{ "url": "<YouTube URL>" }` | 成功下载并保存本地 MP4 | ⬜ | 当前标记为搁置 |
+| 1 | `navigate_to_bookmarks` | `{}` | 成功跳转到 `/i/bookmarks` | ✅ | 通过 |
+| 2 | `scrape_bookmarks` | `{ "limit": 5 }` | 返回 `success=true` 且 `count>0` | ✅ | 通过（count=5） |
+| 3 | `navigate_to_notifications` | `{}` | 成功跳转到 `/notifications` | ✅ | 通过 |
+| 4 | `quote_tweet` | `{ "text": "MCP quote test", "draftOnly": true }` | 打开引用推文框并填入文本，不发送 | ✅ | 通过 |
+| 5 | `scrape_thread` | `{ "maxScrolls": 5 }` | 返回同作者 thread，`count>=1` | ✅ | 通过 |
+| 6 | `account_analytics` | `{ "startDate": "2026-03-01", "endDate": "2026-03-05" }` | 返回 `followers/timeSeries` 或明确错误 | ✅ | 通过（已修复参数映射为 `fromTime/toTime`） |
+| 7 | `create_article` | `{ "title": "MCP Test Article", "content": "Hello from MCP", "publish": false }` | 进入文章编辑页并保存草稿 | ❌ | 当前失败：`fill_article_title` 超时；本轮先跳过 |
+| 8 | `fetch_wechat_article` | `{ "url": "<微信文章URL>" }` | 返回标题/正文等结构化数据 | ⬜ | 未测 |
+| 9 | `fetch_tiktok_video` | `{ "url": "<TikTok URL>" }` | 返回视频元数据，若可下载则含本地文件信息 | ✅ | 用户手测通过 |
+| 10 | `fetch_youtube_video` | `{ "url": "<YouTube URL>" }` | 返回 `title/author/videoId` | ⬜ | 未测 |
+| 11 | `post_thread` | `{ "tweets": [{ "text": "Thread test 1" }, { "text": "Thread test 2" }], "draftOnly": true }` | 至少能稳定填充 thread 草稿 | ✅ | 通过（纯文本/图片/视频场景已验证） |
+| 12 | `download_youtube_video` | `{ "url": "<YouTube URL>" }` | 成功下载并保存本地 MP4 | ⬜ | 未测（原先搁置） |
 
-## 2. 推荐执行原则
+## 2. 当前剩余未测
+
+- `fetch_wechat_article`
+- `fetch_youtube_video`
+- `download_youtube_video`
+
+## 3. 推荐执行原则
 
 - 每次只测 1 个工具，立即记录结果和错误原文
 - 涉及发帖默认用 `draftOnly=true`，避免误发
 - 失败时先复现 2 次再定性为稳定失败
-
