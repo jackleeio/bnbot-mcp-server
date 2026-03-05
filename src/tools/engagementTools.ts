@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import type { BnbotWsServer } from '../wsServer.js';
+import { resolveMediaList } from './mediaUtils.js';
 
 export function registerEngagementTools(server: any, wsServer: BnbotWsServer) {
   server.tool(
@@ -37,9 +38,15 @@ export function registerEngagementTools(server: any, wsServer: BnbotWsServer) {
     'Quote tweet the currently open tweet with custom text. Navigate to the tweet first using navigate_to_tweet.',
     {
       text: z.string().describe('The quote text to post with the retweet'),
+      media: z.array(z.string()).optional().describe('Array of media to attach. Supports: URLs (https://...), local file paths (/path/to/file.png, ~/Downloads/video.mp4). Images: png/jpg/gif/webp. Videos: mp4/mov/webm.'),
+      draftOnly: z.boolean().optional().describe('If true, fill the composer but do not click send'),
     },
-    async (args: { text: string }) => {
-      const result = await wsServer.sendAction('quote_tweet', { text: args.text });
+    async (args: { text: string; media?: string[]; draftOnly?: boolean }) => {
+      const actionParams: Record<string, unknown> = { text: args.text, draftOnly: args.draftOnly };
+      if (args.media && args.media.length > 0) {
+        actionParams.media = resolveMediaList(args.media);
+      }
+      const result = await wsServer.sendAction('quote_tweet', actionParams);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         isError: !result.success,
