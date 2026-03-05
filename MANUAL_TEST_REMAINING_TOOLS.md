@@ -1,6 +1,8 @@
-# BNBOT MCP 剩余工具手工测试清单
+# BNBOT MCP 工具测试清单
 
-更新时间：2026-03-05（已同步到当前实测进度）
+更新时间：2026-03-06
+
+状态说明：`✅ 已通过` / `⚠️ 部分通过` / `⏳ 待回归` / `❌ 失败`
 
 ## 0. 前置环境
 
@@ -9,30 +11,87 @@
 - X 页面：已登录
 - 后端：`/Users/jacklee/Projects/BNBOT` 可用（内容搬运/下载类工具建议开启）
 
-## 1. 测试顺序（逐项）
+## 1. 全部工具测试结果（30 个）
 
-| # | 工具 | 参数（最小用例） | 通过标准 | 结果 | 备注 |
-|---|---|---|---|---|---|
-| 1 | `navigate_to_bookmarks` | `{}` | 成功跳转到 `/i/bookmarks` | ✅ | 通过 |
-| 2 | `scrape_bookmarks` | `{ "limit": 5 }` | 返回 `success=true` 且 `count>0` | ✅ | 通过（count=5） |
-| 3 | `navigate_to_notifications` | `{}` | 成功跳转到 `/notifications` | ✅ | 通过 |
-| 4 | `quote_tweet` | `{ "text": "MCP quote test", "draftOnly": true }` | 打开引用推文框并填入文本，不发送 | ✅ | 通过 |
-| 5 | `scrape_thread` | `{ "maxScrolls": 5 }` | 返回同作者 thread，`count>=1` | ✅ | 通过 |
-| 6 | `account_analytics` | `{ "startDate": "2026-03-01", "endDate": "2026-03-05" }` | 返回 `followers/timeSeries` 或明确错误 | ✅ | 通过（已修复参数映射为 `fromTime/toTime`） |
-| 7 | `create_article` | `{ "title": "MCP Test Article", "content": "Hello from MCP", "publish": false }` | 进入文章编辑页并保存草稿 | ❌ | 当前失败：`fill_article_title` 超时；本轮先跳过 |
-| 8 | `fetch_wechat_article` | `{ "url": "<微信文章URL>" }` | 返回标题/正文等结构化数据 | ✅ | 通过（已实测你提供的公众号链接） |
-| 9 | `fetch_tiktok_video` | `{ "url": "<TikTok URL>" }` | 返回视频元数据，若可下载则含本地文件信息 | ✅ | 用户手测通过 |
-| 10 | `fetch_youtube_video` | `{ "url": "<YouTube URL>" }` | 返回 `title/author/videoId` | ⬜ | 未测 |
-| 11 | `post_thread` | `{ "tweets": [{ "text": "Thread test 1" }, { "text": "Thread test 2" }], "draftOnly": true }` | 至少能稳定填充 thread 草稿 | ✅ | 通过（纯文本/图片/视频场景已验证） |
-| 12 | `download_youtube_video` | `{ "url": "<YouTube URL>" }` | 成功下载并保存本地 MP4 | ⬜ | 未测（原先搁置） |
+### 状态类
 
-## 2. 当前剩余未测
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `get_extension_status` | ✅ | |
+| `get_current_page_info` | ✅ | |
 
-- `fetch_youtube_video`
-- `download_youtube_video`
+### 导航类
 
-## 3. 推荐执行原则
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `navigate_to_tweet` | ✅ | 含 URL 验证 |
+| `navigate_to_search` | ✅ | 支持 sort 参数 |
+| `navigate_to_bookmarks` | ✅ | |
+| `navigate_to_notifications` | ✅ | |
+| `navigate_to_following` | ✅ | |
+| `return_to_timeline` | ✅ | |
 
-- 每次只测 1 个工具，立即记录结果和错误原文
-- 涉及发帖默认用 `draftOnly=true`，避免误发
-- 失败时先复现 2 次再定性为稳定失败
+### 发推类
+
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `post_tweet` | ✅ | 支持文本/媒体/draftOnly |
+| `post_thread` | ✅ | 修复 Compose/Add 流程后，纯文本/图片/视频已验证 |
+| `submit_reply` | ✅ | 含导航+双重验证 |
+
+### 互动类
+
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `like_tweet` | ✅ | |
+| `retweet` | ✅ | |
+| `quote_tweet` | ✅ | 支持 draftOnly |
+| `follow_user` | ✅ | 支持 username 参数 |
+
+### 抓取类
+
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `scrape_timeline` | ✅ | |
+| `scrape_bookmarks` | ✅ | |
+| `scrape_current_view` | ✅ | |
+| `scrape_search_results` | ✅ | |
+| `scrape_thread` | ✅ | |
+| `account_analytics` | ✅ | 已修复参数映射为 fromTime/toTime |
+
+### 内容获取类
+
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `fetch_wechat_article` | ✅ | |
+| `fetch_tiktok_video` | ✅ | |
+| `fetch_xiaohongshu_note` | ✅ | |
+
+### 文章工具（新增）
+
+| 工具 | 结果 | 备注 |
+|---|---|---|
+| `open_article_editor` | ✅ | 先到 `/compose/articles` 再点击创建 |
+| `fill_article_title` | ✅ | 已修复误写正文问题 |
+| `fill_article_body` | ⚠️ | 纯文本/图片可用；Markdown 自动渲染仍不稳定（有时落成纯文本） |
+| `upload_article_header_image` | ✅ | 已补 `applyButton` 点击流程 |
+| `publish_article` | ⏳ | 待单独回归（仅自动保存草稿路径已覆盖） |
+| `create_article` | ⏳ | 待端到端回归，依赖上面正文 Markdown 稳定性 |
+
+## 2. 仍需重点回归
+
+- `fill_article_body`（`format=markdown`）富文本渲染稳定性
+- `publish_article` 独立发布路径
+- `create_article` 全流程（标题/正文/头图/发布）
+
+## 3. 已移除工具
+
+- `fetch_youtube_video` — 已移除
+- `download_youtube_video` — 已移除
+
+## 4. 总结
+
+- 共 30 个工具：
+- `✅ 27` 个已通过
+- `⚠️ 1` 个部分通过（`fill_article_body`）
+- `⏳ 2` 个待回归（`publish_article`、`create_article`）
