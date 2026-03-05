@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import type { BnbotWsServer } from '../wsServer.js';
-import { resolveMediaList } from './mediaUtils.js';
+import { resolveMediaListAsync } from './mediaUtils.js';
 
 export function registerEngagementTools(server: any, wsServer: BnbotWsServer) {
   server.tool(
@@ -44,7 +44,7 @@ export function registerEngagementTools(server: any, wsServer: BnbotWsServer) {
     async (args: { text: string; media?: string[]; draftOnly?: boolean }) => {
       const actionParams: Record<string, unknown> = { text: args.text, draftOnly: args.draftOnly };
       if (args.media && args.media.length > 0) {
-        actionParams.media = resolveMediaList(args.media);
+        actionParams.media = await resolveMediaListAsync(args.media);
       }
       const result = await wsServer.sendAction('quote_tweet', actionParams);
       return {

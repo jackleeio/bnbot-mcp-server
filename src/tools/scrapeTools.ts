@@ -87,9 +87,21 @@ export function registerScrapeTools(server: any, wsServer: BnbotWsServer) {
     {
       startDate: z.string().optional().describe('Start date in YYYY-MM-DD format'),
       endDate: z.string().optional().describe('End date in YYYY-MM-DD format'),
+      granularity: z.enum(['Daily', 'Weekly', 'Monthly']).optional().describe('Aggregation level for time series data'),
     },
-    async (params: { startDate?: string; endDate?: string }) => {
-      const result = await wsServer.sendAction('account_analytics', params);
+    async (params: { startDate?: string; endDate?: string; granularity?: 'Daily' | 'Weekly' | 'Monthly' }) => {
+      const fromTime = params.startDate
+        ? `${params.startDate}T00:00:00.000Z`
+        : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const toTime = params.endDate
+        ? `${params.endDate}T23:59:59.999Z`
+        : new Date().toISOString();
+
+      const result = await wsServer.sendAction('account_analytics', {
+        fromTime,
+        toTime,
+        granularity: params.granularity || 'Daily',
+      });
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         isError: !result.success,

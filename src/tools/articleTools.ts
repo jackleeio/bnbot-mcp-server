@@ -6,6 +6,24 @@ import { z } from 'zod';
 import type { BnbotWsServer } from '../wsServer.js';
 
 export function registerArticleTools(server: any, wsServer: BnbotWsServer) {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  async function sendWithTimeoutRetry(
+    actionType: string,
+    params: Record<string, unknown>,
+    timeout = 60000,
+    retries = 1
+  ) {
+    let last = await wsServer.sendAction(actionType, params, timeout);
+    let attempts = 0;
+    while (!last.success && (last.error || '').includes('timed out') && attempts < retries) {
+      attempts++;
+      await sleep(1500);
+      last = await wsServer.sendAction(actionType, params, timeout);
+    }
+    return last;
+  }
+
   server.tool(
     'create_article',
     'Create and publish a Twitter/X article (long-form content). Handles the full flow: open editor, fill title, fill body, and optionally publish.',
@@ -23,18 +41,21 @@ export function registerArticleTools(server: any, wsServer: BnbotWsServer) {
           isError: true,
         };
       }
+      // Give SPA route/editor a moment to stabilize before typing.
+      await sleep(2500);
 
       // 2. Fill title
-      const titleResult = await wsServer.sendAction('fill_article_title', { title: params.title });
+      const titleResult = await sendWithTimeoutRetry('fill_article_title', { title: params.title });
       if (!titleResult.success) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: `Fill title failed: ${titleResult.error}` }, null, 2) }],
           isError: true,
         };
       }
+      await sleep(800);
 
       // 3. Fill body
-      const bodyResult = await wsServer.sendAction('fill_article_body', { content: params.content });
+      const bodyResult = await sendWithTimeoutRetry('fill_article_body', { content: params.content });
       if (!bodyResult.success) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: `Fill body failed: ${bodyResult.error}` }, null, 2) }],

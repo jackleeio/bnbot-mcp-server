@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import type { BnbotWsServer } from '../wsServer.js';
-import { resolveMediaList } from './mediaUtils.js';
+import { resolveMediaListAsync, resolveSingleMediaSource } from './mediaUtils.js';
 
 export function registerTweetTools(server: any, wsServer: BnbotWsServer) {
   server.tool(
@@ -18,7 +18,7 @@ export function registerTweetTools(server: any, wsServer: BnbotWsServer) {
     async (params: { text: string; media?: string[]; draftOnly?: boolean }) => {
       const actionParams: Record<string, unknown> = { text: params.text, draftOnly: params.draftOnly };
       if (params.media && params.media.length > 0) {
-        actionParams.media = resolveMediaList(params.media);
+        actionParams.media = await resolveMediaListAsync(params.media);
       }
       const result = await wsServer.sendAction('post_tweet', actionParams);
       return {
@@ -34,11 +34,61 @@ export function registerTweetTools(server: any, wsServer: BnbotWsServer) {
     {
       tweets: z.array(z.object({
         text: z.string().describe('Tweet text'),
-        images: z.array(z.string()).optional().describe('Image URLs for this tweet'),
+        media: z.array(z.object({
+          type: z.enum(['photo', 'video', 'animated_gif']).optional().describe('Media type'),
+          url: z.string().optional().describe('Media URL'),
+          media_url: z.string().optional().describe('Media URL (draft timeline format)'),
+          base64: z.string().optional().describe('Base64 media data URL'),
+          video_url: z.string().optional().describe('Video source URL'),
+        })).optional().describe('Media array (same as draft timeline format)'),
+        images: z.array(z.string()).optional().describe('Backward compatible image URL list'),
       })).describe('Array of tweets in the thread, in order'),
+      draftOnly: z.boolean().optional().describe('If true, fill the thread composer but do not click send'),
     },
-    async (params: { tweets: Array<{ text: string; images?: string[] }> }) => {
-      const result = await wsServer.sendAction('post_thread', params);
+    async (params: {
+      tweets: Array<{
+        text: string;
+        media?: Array<{ type?: 'photo' | 'video' | 'animated_gif'; url?: string; media_url?: string; base64?: string; video_url?: string }>;
+        images?: string[];
+      }>;
+      draftOnly?: boolean;
+    }) => {
+      const normalizedTweets = params.tweets.map((tweet) => {
+        const mediaList = [
+          ...((tweet.media || []).map((item) => ({
+            src: item.url || item.media_url || item.base64 || '',
+            typeHint: item.type,
+            video_url: item.video_url,
+          }))),
+          ...((tweet.images || []).map((url) => ({ src: url, typeHint: 'photo' as const, video_url: undefined as string | undefined }))),
+        ].filter((m) => !!m.src);
+
+        return { text: tweet.text, media: mediaList };
+      });
+
+      const resolvedTweets = await Promise.all(normalizedTweets.map(async (tweet) => {
+        const resolvedMedia = await Promise.all(
+          tweet.media.map(async (item) => {
+            const resolved = await resolveSingleMediaSource(item.src);
+            const type = item.typeHint || resolved.type;
+            return {
+              type,
+              url: resolved.url,
+              media_url: resolved.url,
+              video_url: item.video_url,
+            };
+          })
+        );
+        return {
+          text: tweet.text,
+          media: resolvedMedia,
+        };
+      }));
+
+      const result = await wsServer.sendAction('post_thread', {
+        tweets: resolvedTweets,
+        draftOnly: params.draftOnly,
+      }, 300000);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         isError: !result.success,
