@@ -3,18 +3,55 @@
  */
 
 import { z } from 'zod';
+import { readFileSync } from 'fs';
+import { extname } from 'path';
 import type { BnbotWsServer } from '../wsServer.js';
+
+const VIDEO_EXTS = ['.mp4', '.mov', '.avi', '.webm'];
+
+function localFileToDataUrl(filePath: string): { dataUrl: string; isVideo: boolean } {
+  const buffer = readFileSync(filePath);
+  const ext = extname(filePath).toLowerCase();
+  const mimeMap: Record<string, string> = {
+    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
+    '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.avi': 'video/x-msvideo', '.webm': 'video/webm',
+  };
+  const mime = mimeMap[ext] || 'application/octet-stream';
+  const sizeMB = buffer.length / 1024 / 1024;
+  if (sizeMB > 50) {
+    throw new Error(`File too large: ${sizeMB.toFixed(1)}MB (max 50MB)`);
+  }
+  return {
+    dataUrl: `data:${mime};base64,${buffer.toString('base64')}`,
+    isVideo: VIDEO_EXTS.includes(ext),
+  };
+}
 
 export function registerTweetTools(server: any, wsServer: BnbotWsServer) {
   server.tool(
     'post_tweet',
-    'Post a new tweet on Twitter/X. Supports text and optional images.',
+    'Post a new tweet on Twitter/X. Supports text and optional images/videos.',
     {
       text: z.string().describe('Tweet text content (max 280 characters)'),
-      images: z.array(z.string()).optional().describe('Array of image URLs to attach'),
+      media: z.array(z.string()).optional().describe('Array of media to attach. Supports: URLs (https://...), local file paths (/path/to/file.png, ~/Downloads/video.mp4). Images: png/jpg/gif/webp. Videos: mp4/mov/webm.'),
+      draftOnly: z.boolean().optional().describe('If true, fill the tweet composer but do not click send'),
     },
-    async (params: { text: string; images?: string[] }) => {
-      const result = await wsServer.sendAction('post_tweet', params);
+    async (params: { text: string; media?: string[]; draftOnly?: boolean }) => {
+      const actionParams: Record<string, unknown> = { text: params.text, draftOnly: params.draftOnly };
+      if (params.media && params.media.length > 0) {
+        actionParams.media = params.media.map(src => {
+          if (src.startsWith('/') || src.startsWith('~')) {
+            const resolved = src.replace(/^~/, process.env.HOME || '');
+            const { dataUrl, isVideo } = localFileToDataUrl(resolved);
+            return { type: isVideo ? 'video' : 'photo', url: dataUrl };
+          }
+          // URL - guess type from extension
+          const isVideo = VIDEO_EXTS.some(ext => src.toLowerCase().includes(ext));
+          return { type: isVideo ? 'video' : 'photo', url: src };
+        });
+      }
+      const result = await wsServer.sendAction('post_tweet', actionParams);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         isError: !result.success,
