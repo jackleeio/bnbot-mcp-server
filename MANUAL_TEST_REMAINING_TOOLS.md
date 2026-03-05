@@ -20,7 +20,7 @@
 | 5 | `scrape_thread` | `{ "maxScrolls": 5 }` | 返回同作者 thread，`count>=1` | ✅ | 通过 |
 | 6 | `account_analytics` | `{ "startDate": "2026-03-01", "endDate": "2026-03-05" }` | 返回 `followers/timeSeries` 或明确错误 | ✅ | 通过（已修复参数映射为 `fromTime/toTime`） |
 | 7 | `create_article` | `{ "title": "MCP Test Article", "content": "Hello from MCP", "publish": false }` | 进入文章编辑页并保存草稿 | ❌ | 当前失败：`fill_article_title` 超时；本轮先跳过 |
-| 8 | `fetch_wechat_article` | `{ "url": "<微信文章URL>" }` | 返回标题/正文等结构化数据 | ⬜ | 未测 |
+| 8 | `fetch_wechat_article` | `{ "url": "<微信文章URL>" }` | 返回标题/正文等结构化数据 | ✅ | 通过（已实测你提供的公众号链接） |
 | 9 | `fetch_tiktok_video` | `{ "url": "<TikTok URL>" }` | 返回视频元数据，若可下载则含本地文件信息 | ✅ | 用户手测通过 |
 | 10 | `fetch_youtube_video` | `{ "url": "<YouTube URL>" }` | 返回 `title/author/videoId` | ⬜ | 未测 |
 | 11 | `post_thread` | `{ "tweets": [{ "text": "Thread test 1" }, { "text": "Thread test 2" }], "draftOnly": true }` | 至少能稳定填充 thread 草稿 | ✅ | 通过（纯文本/图片/视频场景已验证） |
@@ -28,7 +28,6 @@
 
 ## 2. 当前剩余未测
 
-- `fetch_wechat_article`
 - `fetch_youtube_video`
 - `download_youtube_video`
 
