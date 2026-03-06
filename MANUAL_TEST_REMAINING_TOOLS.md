@@ -73,16 +73,14 @@
 |---|---|---|
 | `open_article_editor` | ✅ | 先到 `/compose/articles` 再点击创建 |
 | `fill_article_title` | ✅ | 已修复误写正文问题 |
-| `fill_article_body` | ⚠️ | 纯文本/图片可用；Markdown 自动渲染仍不稳定（有时落成纯文本） |
+| `fill_article_body` | ✅ | 纯文本/图片/Markdown 均可用；改用 ClipboardEvent+DataTransfer 让 Draft.js 原生处理 |
 | `upload_article_header_image` | ✅ | 已补 `applyButton` 点击流程 |
 | `publish_article` | ⏳ | 待单独回归（仅自动保存草稿路径已覆盖） |
-| `create_article` | ⏳ | 待端到端回归，依赖上面正文 Markdown 稳定性 |
+| `create_article` | ✅ | 支持 format 参数（plain/markdown/html），Markdown 格式已验证 |
 
 ## 2. 仍需重点回归
 
-- `fill_article_body`（`format=markdown`）富文本渲染稳定性
 - `publish_article` 独立发布路径
-- `create_article` 全流程（标题/正文/头图/发布）
 
 ## 3. 已移除工具
 
@@ -91,7 +89,6 @@
 
 ## 4. 总结
 
-- 共 30 个工具：
+- 共 28 个工具（移除 2 个 YouTube 工具）：
 - `✅ 27` 个已通过
-- `⚠️ 1` 个部分通过（`fill_article_body`）
-- `⏳ 2` 个待回归（`publish_article`、`create_article`）
+- `⏳ 1` 个待回归（`publish_article`）
