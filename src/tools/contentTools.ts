@@ -1,5 +1,5 @@
 /**
- * Content Tools - Fetch content from external platforms (WeChat, TikTok, Xiaohongshu, YouTube)
+ * Content Tools - Fetch content from external platforms (WeChat, TikTok, Xiaohongshu)
  */
 
 import { z } from 'zod';
@@ -79,58 +79,4 @@ export function registerContentTools(server: any, wsServer: BnbotWsServer) {
     }
   );
 
-  server.tool(
-    'fetch_youtube_video',
-    'Fetch YouTube video metadata including title, author, and thumbnail via oEmbed API.',
-    {
-      url: z.string().describe('YouTube video URL'),
-    },
-    async (params: { url: string }) => {
-      const result = await wsServer.sendAction('fetch_youtube_video', params);
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        isError: !result.success,
-      };
-    }
-  );
-
-  server.tool(
-    'download_youtube_video',
-    'Download a YouTube video via the bnbot browser extension. The extension calls the bnbot backend API (with auth) to get stream URLs, downloads video+audio streams in the browser, merges with FFmpeg WASM, and returns the result. Requires the user to be logged into bnbot in the browser. Saves as MP4 locally.',
-    {
-      url: z.string().describe('YouTube video URL'),
-      savePath: z.string().optional().describe('Local path to save the video file. Defaults to ~/Downloads/youtube_{video_id}.mp4'),
-    },
-    async (params: { url: string; savePath?: string }) => {
-      const result = await wsServer.sendAction('download_youtube_video', { url: params.url }, 300000);
-      if (!result.success) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-          isError: true,
-        };
-      }
-
-      const data = result.data as Record<string, unknown>;
-      const videoBase64 = data?.video_base64 as string | undefined;
-
-      if (videoBase64) {
-        const videoId = data?.videoId as string || 'unknown';
-        const filePath = params.savePath || join(homedir(), 'Downloads', `youtube_${videoId}.mp4`);
-        try {
-          const buffer = Buffer.from(videoBase64, 'base64');
-          writeFileSync(filePath, buffer);
-          delete data.video_base64;
-          data.local_file = filePath;
-          data.file_size_mb = +(buffer.length / 1024 / 1024).toFixed(2);
-        } catch (e) {
-          data.download_error = e instanceof Error ? e.message : 'Failed to save file';
-        }
-      }
-
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-        isError: false,
-      };
-    }
-  );
 }
